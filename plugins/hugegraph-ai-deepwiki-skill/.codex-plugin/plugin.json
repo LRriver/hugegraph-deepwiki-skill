@@ -1,0 +1,29 @@
+{
+  "name": "hugegraph-ai-deepwiki-skill",
+  "version": "0.1.0",
+  "description": "DeepWiki-backed Q&A skill for Apache HugeGraph AI.",
+  "author": {
+    "name": "HugeGraph Community",
+    "email": "",
+    "url": "https://github.com/apache/hugegraph-ai"
+  },
+  "homepage": "https://deepwiki.com/apache/hugegraph-ai",
+  "repository": "https://github.com/apache/hugegraph-ai",
+  "license": "Apache-2.0",
+  "keywords": ["hugegraph-ai", "deepwiki", "apache", "rag", "knowledge-assistant"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "HugeGraph AI DeepWiki Skill",
+    "shortDescription": "Ask DeepWiki about Apache HugeGraph AI.",
+    "longDescription": "Provides a repository-grounded Apache HugeGraph AI Q&A skill that forwards installation, examples, agents, RAG workflows, graph-enhanced AI, model integration, configuration, and implementation questions to the official DeepWiki MCP wiki.",
+    "developerName": "HugeGraph Community",
+    "category": "Developer Tools",
+    "capabilities": ["Knowledge", "MCP"],
+    "websiteURL": "https://deepwiki.com/apache/hugegraph-ai",
+    "defaultPrompt": [
+      "Use $hugegraph-ai-deepwiki-skill to answer my HugeGraph AI question."
+    ],
+    "brandColor": "#0F766E"
+  }
+}
+
