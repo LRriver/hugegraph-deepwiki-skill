@@ -1,0 +1,19 @@
+{
+  "name": "hugegraph-deepwiki-skills",
+  "description": "DeepWiki-backed Q&A skills for Apache HugeGraph projects.",
+  "owner": {
+    "name": "HugeGraph Community"
+  },
+  "plugins": [
+    {
+      "name": "hugegraph-deepwiki-skill",
+      "source": "./plugins/hugegraph-deepwiki-skill",
+      "description": "Ask DeepWiki about Apache HugeGraph."
+    },
+    {
+      "name": "hugegraph-ai-deepwiki-skill",
+      "source": "./plugins/hugegraph-ai-deepwiki-skill",
+      "description": "Ask DeepWiki about Apache HugeGraph AI."
+    }
+  ]
+}

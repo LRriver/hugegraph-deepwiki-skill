@@ -1,0 +1,32 @@
+{
+  "name": "hugegraph-deepwiki-skills",
+  "interface": {
+    "displayName": "HugeGraph DeepWiki Skills"
+  },
+  "plugins": [
+    {
+      "name": "hugegraph-deepwiki-skill",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hugegraph-deepwiki-skill"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "hugegraph-ai-deepwiki-skill",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hugegraph-ai-deepwiki-skill"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
