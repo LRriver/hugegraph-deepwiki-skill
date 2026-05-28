@@ -1,0 +1,29 @@
+{
+  "name": "hugegraph-deepwiki-skill",
+  "version": "0.1.0",
+  "description": "DeepWiki-backed Q&A skill for Apache HugeGraph.",
+  "author": {
+    "name": "HugeGraph Community",
+    "email": "",
+    "url": "https://github.com/apache/hugegraph"
+  },
+  "homepage": "https://deepwiki.com/apache/hugegraph",
+  "repository": "https://github.com/apache/hugegraph",
+  "license": "Apache-2.0",
+  "keywords": ["hugegraph", "deepwiki", "apache", "knowledge-assistant"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "HugeGraph DeepWiki Skill",
+    "shortDescription": "Ask DeepWiki about Apache HugeGraph.",
+    "longDescription": "Provides a repository-grounded Apache HugeGraph Q&A skill that forwards architecture, API, configuration, storage, traversal, schema, and implementation questions to the official DeepWiki MCP wiki.",
+    "developerName": "HugeGraph Community",
+    "category": "Developer Tools",
+    "capabilities": ["Knowledge", "MCP"],
+    "websiteURL": "https://deepwiki.com/apache/hugegraph",
+    "defaultPrompt": [
+      "Use $hugegraph-deepwiki-skill to answer my HugeGraph question."
+    ],
+    "brandColor": "#2563EB"
+  }
+}
+

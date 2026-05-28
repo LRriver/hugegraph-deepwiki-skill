@@ -1,0 +1,14 @@
+{
+  "name": "hugegraph-deepwiki-skill",
+  "description": "DeepWiki-backed Q&A skill for Apache HugeGraph.",
+  "version": "0.1.0",
+  "author": {
+    "name": "HugeGraph Community"
+  },
+  "homepage": "https://deepwiki.com/apache/hugegraph",
+  "repository": "https://github.com/apache/hugegraph",
+  "license": "Apache-2.0",
+  "keywords": ["hugegraph", "deepwiki", "apache", "knowledge-assistant"],
+  "skills": "./skills/"
+}
+
