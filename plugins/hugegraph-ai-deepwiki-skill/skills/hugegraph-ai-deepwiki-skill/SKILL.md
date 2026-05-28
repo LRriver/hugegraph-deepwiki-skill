@@ -1,14 +1,15 @@
 ---
 name: hugegraph-ai-deepwiki-skill
-description: Use this skill when answering questions about Apache HugeGraph AI, apache/hugegraph-ai source code, architecture, modules, examples, agents, RAG workflows, graph-enhanced AI features, model integration, configuration, installation, demos, or implementation details. The skill forwards the user's question to the official DeepWiki MCP wiki for apache/hugegraph-ai and returns the answer grounded in that repository.
+description: Use this skill as a repository knowledge assistant for Apache HugeGraph AI, apache/hugegraph-ai source code, architecture, modules, examples, agents, RAG workflows, graph-enhanced AI features, model integration, configuration, installation, demos, or implementation details. It answers questions grounded in apache/hugegraph-ai and uses the official DeepWiki MCP wiki as the underlying retrieval channel.
 metadata:
-  short-description: Ask DeepWiki about Apache HugeGraph AI
+  short-description: Apache HugeGraph AI repository assistant
 ---
 
-# HugeGraph AI DeepWiki
+# HugeGraph AI Repository Knowledge Assistant
 
-Use the official DeepWiki MCP server to answer questions about Apache HugeGraph AI.
+Answer questions about the Apache HugeGraph AI source repository. Use the official DeepWiki MCP server as the underlying knowledge retrieval channel.
 
+- Source repository: `https://github.com/apache/hugegraph-ai`
 - DeepWiki page: `https://deepwiki.com/apache/hugegraph-ai`
 - MCP endpoint: `https://mcp.deepwiki.com/mcp`
 - Default repository: `apache/hugegraph-ai`
@@ -22,7 +23,7 @@ Use the official DeepWiki MCP server to answer questions about Apache HugeGraph 
 python3 scripts/deepwiki_mcp.py ask --repo hugegraph-ai --question "<user question>"
 ```
 
-3. Answer the user in your own words using DeepWiki's result as the primary source. Mention that the answer comes from the HugeGraph AI DeepWiki when that provenance is helpful.
+3. Answer the user in your own words using the repository-grounded result as the primary source. Mention that DeepWiki MCP was used as the retrieval channel when that provenance is helpful.
 4. If DeepWiki returns uncertainty, missing coverage, or a transport error, say so plainly and ask for the smallest useful follow-up detail.
 
 ## When to Read Structure or Contents
@@ -39,7 +40,7 @@ If the user needs a fuller wiki dump for offline review or synthesis, read the w
 python3 scripts/deepwiki_mcp.py contents --repo hugegraph-ai
 ```
 
-Then synthesize the final answer. Prefer `ask` for normal Q&A; use `structure` and `contents` only when they add useful grounding.
+Then synthesize the final answer. Prefer `ask` for normal Q&A; use `structure` and `contents` only when they add useful repository grounding.
 
 ## Repository Profile
 

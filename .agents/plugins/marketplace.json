@@ -1,7 +1,7 @@
 {
   "name": "hugegraph-deepwiki-skills",
   "interface": {
-    "displayName": "HugeGraph DeepWiki Skills"
+    "displayName": "HugeGraph Repository Assistants"
   },
   "plugins": [
     {
