@@ -42,12 +42,51 @@ def resolve_repo(alias_or_name: str) -> str:
     return str(profile["repoName"])
 
 
-def decode_sse(body: str) -> str:
+def parse_json(data: str) -> dict[str, Any]:
+    try:
+        parsed = json.loads(data)
+    except json.JSONDecodeError as exc:
+        raise McpError(f"DeepWiki MCP returned non-JSON content: {data[:500]}") from exc
+    if not isinstance(parsed, dict):
+        raise McpError(f"DeepWiki MCP returned an unexpected JSON payload: {data[:500]}")
+    return parsed
+
+
+def read_sse_response(response: Any, expected_id: Optional[int]) -> dict[str, Any]:
     data_lines: list[str] = []
-    for line in body.splitlines():
+    seen_payloads: list[str] = []
+
+    while True:
+        raw_line = response.readline()
+        if not raw_line:
+            break
+
+        line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
         if line.startswith("data:"):
             data_lines.append(line[5:].lstrip())
-    return "\n".join(data_lines) if data_lines else body
+            continue
+        if line:
+            continue
+
+        if not data_lines:
+            continue
+
+        data = "\n".join(data_lines)
+        data_lines = []
+        seen_payloads.append(data)
+        parsed = parse_json(data)
+        if expected_id is None or parsed.get("id") == expected_id:
+            return parsed
+
+    if data_lines:
+        data = "\n".join(data_lines)
+        seen_payloads.append(data)
+        parsed = parse_json(data)
+        if expected_id is None or parsed.get("id") == expected_id:
+            return parsed
+
+    preview = "\n".join(seen_payloads[-3:])
+    raise McpError(f"DeepWiki MCP stream ended without response id {expected_id}: {preview[:500]}")
 
 
 class McpClient:
@@ -63,7 +102,7 @@ class McpClient:
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
             "Mcp-Protocol-Version": self.protocol_version,
-            "User-Agent": "hugegraph-deepwiki-skill/0.1",
+            "User-Agent": "hugegraph-deepwiki-skill/0.1.1",
         }
         if self.session_id:
             headers["Mcp-Session-Id"] = self.session_id
@@ -74,23 +113,22 @@ class McpClient:
                 session_id = response.headers.get("Mcp-Session-Id")
                 if session_id:
                     self.session_id = session_id
-                text = response.read().decode("utf-8")
+                if not expect_response:
+                    return None
+                content_type = response.headers.get("Content-Type", "")
+                if "text/event-stream" in content_type:
+                    parsed = read_sse_response(response, payload.get("id"))
+                else:
+                    text = response.read().decode("utf-8")
+                    if not text.strip():
+                        raise McpError("DeepWiki MCP returned an empty response.")
+                    parsed = parse_json(text)
         except urllib.error.HTTPError as exc:
             details = exc.read().decode("utf-8", errors="replace")
             raise McpError(f"DeepWiki MCP HTTP {exc.code}: {details}") from exc
         except urllib.error.URLError as exc:
             raise McpError(f"Could not reach DeepWiki MCP endpoint: {exc.reason}") from exc
 
-        if not text.strip():
-            if expect_response:
-                raise McpError("DeepWiki MCP returned an empty response.")
-            return None
-
-        decoded = decode_sse(text)
-        try:
-            parsed = json.loads(decoded)
-        except json.JSONDecodeError as exc:
-            raise McpError(f"DeepWiki MCP returned non-JSON content: {decoded[:500]}") from exc
         if "error" in parsed:
             raise McpError(f"DeepWiki MCP error: {json.dumps(parsed['error'], ensure_ascii=False)}")
         return parsed
@@ -117,7 +155,7 @@ class McpClient:
             {
                 "protocolVersion": self.protocol_version,
                 "capabilities": {},
-                "clientInfo": {"name": "hugegraph-deepwiki-skill", "version": "0.1.0"},
+                "clientInfo": {"name": "hugegraph-deepwiki-skill", "version": "0.1.1"},
             },
         )
         self.notify("notifications/initialized", {})

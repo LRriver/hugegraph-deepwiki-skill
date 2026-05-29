@@ -17,26 +17,29 @@ Answer questions about the Apache HugeGraph AI source repository. Use the offici
 ## Default Workflow
 
 1. Preserve the user's question, including code snippets, version constraints, error messages, model/provider details, and environment details.
-2. Ask DeepWiki with the bundled client:
+2. Change directory to this skill directory, the directory containing this `SKILL.md`.
+3. Ask DeepWiki with the bundled client:
 
 ```bash
 python3 scripts/deepwiki_mcp.py ask --repo hugegraph-ai --question "<user question>"
 ```
 
-3. Answer the user in your own words using the repository-grounded result as the primary source. Mention that DeepWiki MCP was used as the retrieval channel when that provenance is helpful.
-4. If DeepWiki returns uncertainty, missing coverage, or a transport error, say so plainly and ask for the smallest useful follow-up detail.
+4. Answer the user in your own words using the repository-grounded result as the primary source. Mention that DeepWiki MCP was used as the retrieval channel when that provenance is helpful.
+5. If DeepWiki returns uncertainty, missing coverage, or a transport error, say so plainly and ask for the smallest useful follow-up detail.
 
 ## When to Read Structure or Contents
 
 For broad orientation questions, onboarding questions, or "where should I start?" prompts, inspect the wiki structure:
 
 ```bash
+cd <directory-containing-this-SKILL.md>
 python3 scripts/deepwiki_mcp.py structure --repo hugegraph-ai
 ```
 
 If the user needs a fuller wiki dump for offline review or synthesis, read the wiki contents:
 
 ```bash
+cd <directory-containing-this-SKILL.md>
 python3 scripts/deepwiki_mcp.py contents --repo hugegraph-ai
 ```
 
