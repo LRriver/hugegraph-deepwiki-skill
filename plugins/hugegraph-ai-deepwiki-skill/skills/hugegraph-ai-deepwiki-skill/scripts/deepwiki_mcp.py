@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -18,6 +19,30 @@ DEFAULT_ENDPOINT = "https://mcp.deepwiki.com/mcp"
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 REPOS_PATH = SKILL_DIR / "references" / "repos.json"
+STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "apache",
+    "are",
+    "as",
+    "for",
+    "hugegraph",
+    "how",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "used",
+    "what",
+    "where",
+    "which",
+    "why",
+}
 
 
 class McpError(RuntimeError):
@@ -43,6 +68,31 @@ def resolve_repo(alias_or_name: str) -> str:
     return str(profile["repoName"])
 
 
+def cache_root() -> Path:
+    configured = os.environ.get("DEEPWIKI_MCP_CACHE_DIR")
+    if configured:
+        return Path(configured).expanduser()
+    xdg_cache = os.environ.get("XDG_CACHE_HOME")
+    if xdg_cache:
+        return Path(xdg_cache).expanduser() / "deepwiki-mcp"
+    return Path.home() / ".cache" / "deepwiki-mcp"
+
+
+def repo_cache_dir(repo_name: str) -> Path:
+    return cache_root() / repo_name.replace("/", "__")
+
+
+def contents_cache_path(repo_name: str) -> Path:
+    return repo_cache_dir(repo_name) / "wiki-contents.md"
+
+
+def write_text_atomic(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(text, encoding="utf-8")
+    tmp_path.replace(path)
+
+
 def parse_json(data: str) -> dict[str, Any]:
     try:
         parsed = json.loads(data)
@@ -56,7 +106,7 @@ def parse_json(data: str) -> dict[str, Any]:
 def read_sse_response(response: Any, expected_id: Optional[int]) -> dict[str, Any]:
     data_lines: list[str] = []
     seen_payloads: list[str] = []
-    max_seconds = float(os.environ.get("DEEPWIKI_MCP_STREAM_TIMEOUT", "60"))
+    max_seconds = float(os.environ.get("DEEPWIKI_MCP_STREAM_TIMEOUT", "120"))
     deadline = time.monotonic() + max_seconds
 
     while True:
@@ -110,7 +160,7 @@ class McpClient:
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
             "Mcp-Protocol-Version": self.protocol_version,
-            "User-Agent": "hugegraph-ai-deepwiki-skill/0.1.2",
+            "User-Agent": "hugegraph-ai-deepwiki-skill/0.1.4",
         }
         if self.session_id:
             headers["Mcp-Session-Id"] = self.session_id
@@ -163,7 +213,7 @@ class McpClient:
             {
                 "protocolVersion": self.protocol_version,
                 "capabilities": {},
-                "clientInfo": {"name": "hugegraph-ai-deepwiki-skill", "version": "0.1.2"},
+                "clientInfo": {"name": "hugegraph-ai-deepwiki-skill", "version": "0.1.4"},
             },
         )
         self.notify("notifications/initialized", {})
@@ -198,6 +248,106 @@ def output_tool_result(client: McpClient, tool: str, arguments: dict[str, Any]) 
     print(extract_text(result))
 
 
+def read_wiki_contents(client: McpClient, repo_name: str) -> str:
+    client.initialize()
+    result = client.call_tool("read_wiki_contents", {"repoName": repo_name})
+    return extract_text(result)
+
+
+def ensure_cached_contents(client: McpClient, repo_name: str, refresh: bool = False) -> tuple[str, Path, bool]:
+    path = contents_cache_path(repo_name)
+    if path.exists() and not refresh:
+        return path.read_text(encoding="utf-8"), path, False
+
+    text = read_wiki_contents(client, repo_name)
+    write_text_atomic(path, text)
+    return text, path, True
+
+
+def query_terms(query: str) -> list[str]:
+    raw_terms = re.findall(r"[\w./:-]+|[\u4e00-\u9fff]+", query.lower())
+    terms: list[str] = []
+    for term in raw_terms:
+        normalized = term.strip("._/:;-")
+        if len(normalized) < 2 or normalized in STOPWORDS:
+            continue
+        if normalized not in terms:
+            terms.append(normalized)
+    return terms
+
+
+def score_window(text: str, terms: list[str]) -> int:
+    lowered = text.lower()
+    score = 0
+    for term in terms:
+        pattern = rf"(?<![a-z0-9_]){re.escape(term)}(?![a-z0-9_])"
+        count = len(re.findall(pattern, lowered))
+        if count:
+            score += count * max(1, min(len(term), 12))
+    if "relevant source files" in lowered:
+        score -= 40
+    if lowered.count("src/main/") > 4 or lowered.count(".java") > 6:
+        score -= 60
+    return score
+
+
+def search_cached_context(contents: str, query: str, limit: int) -> list[tuple[int, int, int, str]]:
+    terms = query_terms(query)
+    if not terms:
+        return []
+
+    lines = contents.splitlines()
+    window_size = 30
+    stride = 10
+    candidates: list[tuple[int, int, int, str]] = []
+
+    for start in range(0, len(lines), stride):
+        end = min(len(lines), start + window_size)
+        window = "\n".join(lines[start:end]).strip()
+        if not window:
+            continue
+        score = score_window(window, terms)
+        if score > 0:
+            candidates.append((score, start + 1, end, window))
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    selected: list[tuple[int, int, int, str]] = []
+    selected_ranges: list[tuple[int, int]] = []
+    for candidate in candidates:
+        _, start, end, _ = candidate
+        if any(start <= kept_end and end >= kept_start for kept_start, kept_end in selected_ranges):
+            continue
+        selected.append(candidate)
+        selected_ranges.append((start, end))
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def output_context(client: McpClient, repo_name: str, query: str, limit: int, refresh: bool) -> None:
+    contents, path, fetched = ensure_cached_contents(client, repo_name, refresh)
+    matches = search_cached_context(contents, query, limit)
+
+    print("# DeepWiki Cached Context")
+    print(f"Repository: {repo_name}")
+    print(f"Cache: {path}")
+    print(f"Cache status: {'refreshed from DeepWiki' if fetched else 'reused local cache'}")
+    print(f"Query: {query}")
+    print()
+
+    if not matches:
+        print("No relevant cached DeepWiki wiki snippets were found for this query.")
+        print("Fallback: use the `ask` command to request an online DeepWiki answer.")
+        return
+
+    for index, (score, start, end, snippet) in enumerate(matches, start=1):
+        print(f"## Snippet {index} (score: {score}, lines: {start}-{end})")
+        print("```text")
+        print(snippet[:4000])
+        print("```")
+        print()
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Ask the official DeepWiki MCP server.")
     parser.add_argument(
@@ -222,6 +372,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     contents = subparsers.add_parser("contents", help="Read wiki contents.")
     contents.add_argument("--repo", default="hugegraph-ai", help="Repository alias.")
+    contents.add_argument("--refresh", action="store_true", help="Refresh the local DeepWiki contents cache.")
+
+    context = subparsers.add_parser("context", help="Search cached DeepWiki wiki contents for a question.")
+    context.add_argument("--repo", default="hugegraph-ai", help="Repository alias.")
+    context.add_argument("--query", required=True, help="Question or keywords to search in cached wiki contents.")
+    context.add_argument("--limit", type=int, default=6, help="Maximum number of snippets to print.")
+    context.add_argument("--refresh", action="store_true", help="Refresh the local DeepWiki contents cache before search.")
 
     tools = subparsers.add_parser("tools", help="List MCP tools for troubleshooting.")
     tools.set_defaults(command="tools")
@@ -247,7 +404,11 @@ def main() -> int:
             output_tool_result(client, "read_wiki_structure", {"repoName": repo_name})
         elif args.command == "contents":
             repo_name = resolve_repo(args.repo)
-            output_tool_result(client, "read_wiki_contents", {"repoName": repo_name})
+            contents_text, _, _ = ensure_cached_contents(client, repo_name, args.refresh)
+            print(contents_text)
+        elif args.command == "context":
+            repo_name = resolve_repo(args.repo)
+            output_context(client, repo_name, args.query, args.limit, args.refresh)
         elif args.command == "tools":
             client.initialize()
             print(json.dumps(client.rpc("tools/list", {}).get("result"), ensure_ascii=False, indent=2))

@@ -15,6 +15,21 @@ DeepWiki is the underlying knowledge and MCP transport layer used by these assis
 https://mcp.deepwiki.com/mcp
 ```
 
+## Runtime Behavior
+
+The skills avoid cloning the HugeGraph repositories for normal Q&A. They use a cached online retrieval flow:
+
+1. Call DeepWiki `read_wiki_contents` once for the target repository when no local cache exists.
+2. Store the generated wiki snapshot under the user's cache directory, using `DEEPWIKI_MCP_CACHE_DIR` when set, then `XDG_CACHE_HOME`, then `~/.cache/deepwiki-mcp`.
+3. Search the cached wiki locally and pass only relevant snippets to Claude Code or Codex.
+4. When the cached wiki context does not contain a precise answer, call DeepWiki `ask_question` for an online answer.
+
+`ask_question` usually returns the final answer plus suggested wiki pages or a DeepWiki search link. For source-file references, use the cached wiki snippets returned by the `context` command; those snippets include DeepWiki's page-level source references when available.
+
+For accurate online answers, agents should pass the user's original question to `ask_question` instead of expanding it into a long prompt. Ordinary Q&A should not clone the upstream repositories; if current source verification is required, prefer online source links or raw GitHub files.
+
+Use `--refresh` on the bundled script commands when you explicitly need to refresh the DeepWiki snapshot.
+
 ## Repository Layout
 
 ```text
