@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -55,8 +56,12 @@ def parse_json(data: str) -> dict[str, Any]:
 def read_sse_response(response: Any, expected_id: Optional[int]) -> dict[str, Any]:
     data_lines: list[str] = []
     seen_payloads: list[str] = []
+    max_seconds = float(os.environ.get("DEEPWIKI_MCP_STREAM_TIMEOUT", "60"))
+    deadline = time.monotonic() + max_seconds
 
     while True:
+        if time.monotonic() > deadline:
+            break
         raw_line = response.readline()
         if not raw_line:
             break
@@ -86,7 +91,10 @@ def read_sse_response(response: Any, expected_id: Optional[int]) -> dict[str, An
             return parsed
 
     preview = "\n".join(seen_payloads[-3:])
-    raise McpError(f"DeepWiki MCP stream ended without response id {expected_id}: {preview[:500]}")
+    raise McpError(
+        f"DeepWiki MCP stream ended without response id {expected_id} "
+        f"within {max_seconds:.0f}s: {preview[:500]}"
+    )
 
 
 class McpClient:
@@ -102,7 +110,7 @@ class McpClient:
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
             "Mcp-Protocol-Version": self.protocol_version,
-            "User-Agent": "hugegraph-ai-deepwiki-skill/0.1.1",
+            "User-Agent": "hugegraph-ai-deepwiki-skill/0.1.2",
         }
         if self.session_id:
             headers["Mcp-Session-Id"] = self.session_id
@@ -155,7 +163,7 @@ class McpClient:
             {
                 "protocolVersion": self.protocol_version,
                 "capabilities": {},
-                "clientInfo": {"name": "hugegraph-ai-deepwiki-skill", "version": "0.1.1"},
+                "clientInfo": {"name": "hugegraph-ai-deepwiki-skill", "version": "0.1.2"},
             },
         )
         self.notify("notifications/initialized", {})

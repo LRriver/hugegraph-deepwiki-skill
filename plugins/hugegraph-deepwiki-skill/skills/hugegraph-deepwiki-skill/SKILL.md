@@ -18,14 +18,26 @@ Answer questions about the Apache HugeGraph source repository. Use the official 
 
 1. Preserve the user's question, including code snippets, version constraints, error messages, and environment details.
 2. Change directory to this skill directory, the directory containing this `SKILL.md`.
-3. Ask DeepWiki with the bundled client:
+3. For reliable repository-grounded answers, read the wiki contents and synthesize the answer:
+
+```bash
+python3 scripts/deepwiki_mcp.py contents --repo hugegraph
+```
+
+4. For broad navigation questions, read the wiki structure instead:
+
+```bash
+python3 scripts/deepwiki_mcp.py structure --repo hugegraph
+```
+
+5. Use DeepWiki's AI `ask_question` tool only when a direct synthesis from contents is insufficient:
 
 ```bash
 python3 scripts/deepwiki_mcp.py ask --repo hugegraph --question "<user question>"
 ```
 
-4. Answer the user in your own words using the repository-grounded result as the primary source. Mention that DeepWiki MCP was used as the retrieval channel when that provenance is helpful.
-5. If DeepWiki returns uncertainty, missing coverage, or a transport error, say so plainly and ask for the smallest useful follow-up detail.
+6. Answer the user in your own words using the repository-grounded result as the primary source. Mention that DeepWiki MCP was used as the retrieval channel when that provenance is helpful.
+7. If `ask` returns uncertainty, times out, or reports a transport/query error, fall back to `contents` and synthesize from the wiki text.
 
 ## When to Read Structure or Pages
 
@@ -43,7 +55,7 @@ cd <directory-containing-this-SKILL.md>
 python3 scripts/deepwiki_mcp.py contents --repo hugegraph
 ```
 
-Then synthesize the final answer. Prefer `ask` for normal Q&A; use `structure` and `contents` only when they add useful repository grounding.
+Then synthesize the final answer from the retrieved wiki text. Keep `ask` as an optional fallback only when the wiki contents do not provide enough context.
 
 ## Repository Profile
 
