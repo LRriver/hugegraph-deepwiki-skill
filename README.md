@@ -1,15 +1,16 @@
-# HugeGraph Repository Knowledge Assistants
+# Repository DeepWiki Knowledge Assistants
 
 [中文](README-zh.md) | [English](README.md)
 
-This repository provides two installable repository knowledge assistants for the Apache HugeGraph project family:
+This repository provides three installable repository knowledge assistants:
 
 - `hugegraph-deepwiki-skill`: Q&A assistant for [apache/hugegraph](https://github.com/apache/hugegraph)
 - `hugegraph-ai-deepwiki-skill`: Q&A assistant for [apache/hugegraph-ai](https://github.com/apache/hugegraph-ai)
+- `seatunnel-deepwiki-skill`: Q&A assistant for [apache/seatunnel](https://github.com/apache/seatunnel)
 
-The goal is to help Claude Code and Codex answer questions about the two source repositories quickly: architecture, modules, APIs, configuration, workflows, examples, and implementation details.
+The goal is to help Claude Code and Codex answer questions about these source repositories quickly: architecture, modules, APIs, configuration, workflows, examples, and implementation details.
 
-DeepWiki is the underlying knowledge and MCP transport layer used by these assistants. Both skills call the official DeepWiki MCP endpoint:
+DeepWiki is the underlying knowledge and MCP transport layer used by these assistants. The skills call the official DeepWiki MCP endpoint:
 
 ```text
 https://mcp.deepwiki.com/mcp
@@ -17,7 +18,7 @@ https://mcp.deepwiki.com/mcp
 
 ## Runtime Behavior
 
-The skills avoid cloning the HugeGraph repositories for normal Q&A. They use a cached online retrieval flow:
+The skills avoid cloning the upstream repositories for normal Q&A. They use a cached online retrieval flow:
 
 1. Call DeepWiki `read_wiki_contents` once for the target repository when no local cache exists.
 2. Store the generated wiki snapshot under the user's cache directory, using `DEEPWIKI_MCP_CACHE_DIR` when set, then `XDG_CACHE_HOME`, then `~/.cache/deepwiki-mcp`.
@@ -41,10 +42,14 @@ Use `--refresh` on the bundled script commands when you explicitly need to refre
     │   ├── .claude-plugin/plugin.json
     │   ├── .codex-plugin/plugin.json
     │   └── skills/hugegraph-deepwiki-skill/
-    └── hugegraph-ai-deepwiki-skill/
+    ├── hugegraph-ai-deepwiki-skill/
+    │   ├── .claude-plugin/plugin.json
+    │   ├── .codex-plugin/plugin.json
+    │   └── skills/hugegraph-ai-deepwiki-skill/
+    └── seatunnel-deepwiki-skill/
         ├── .claude-plugin/plugin.json
         ├── .codex-plugin/plugin.json
-        └── skills/hugegraph-ai-deepwiki-skill/
+        └── skills/seatunnel-deepwiki-skill/
 ```
 
 `plugins/` is the canonical install source. The skill folders inside each plugin are self-contained and can also be copied directly into Claude Code or Codex skill directories.
@@ -59,6 +64,7 @@ cd <repo-directory>
 claude plugin marketplace add "$(pwd)"
 claude plugin install hugegraph-deepwiki-skill@hugegraph-deepwiki-skills
 claude plugin install hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills
+claude plugin install seatunnel-deepwiki-skill@hugegraph-deepwiki-skills
 ```
 
 After the repository is published, Claude Code can add the marketplace from the remote Git repository:
@@ -67,6 +73,7 @@ After the repository is published, Claude Code can add the marketplace from the 
 claude plugin marketplace add <owner>/<repo>
 claude plugin install hugegraph-deepwiki-skill@hugegraph-deepwiki-skills
 claude plugin install hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills
+claude plugin install seatunnel-deepwiki-skill@hugegraph-deepwiki-skills
 ```
 
 For one-session use without installing globally:
@@ -74,6 +81,7 @@ For one-session use without installing globally:
 ```bash
 claude --plugin-dir ./plugins/hugegraph-deepwiki-skill
 claude --plugin-dir ./plugins/hugegraph-ai-deepwiki-skill
+claude --plugin-dir ./plugins/seatunnel-deepwiki-skill
 ```
 
 ### Ask Claude Code To Install It
@@ -81,13 +89,13 @@ claude --plugin-dir ./plugins/hugegraph-ai-deepwiki-skill
 Paste this into Claude Code from any workspace:
 
 ```text
-Clone <repo-url>, enter the cloned repository, run `claude plugin marketplace add "$(pwd)"`, then install `hugegraph-deepwiki-skill@hugegraph-deepwiki-skills` and `hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`. Do not hardcode local absolute paths; use the cloned repository path.
+Clone <repo-url>, enter the cloned repository, run `claude plugin marketplace add "$(pwd)"`, then install `hugegraph-deepwiki-skill@hugegraph-deepwiki-skills`, `hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`, and `seatunnel-deepwiki-skill@hugegraph-deepwiki-skills`. Do not hardcode local absolute paths; use the cloned repository path.
 ```
 
 If the repository is already open in Claude Code, use:
 
 ```text
-Install the two Claude Code plugins from the current repository by running `claude plugin marketplace add "$(pwd)"`, then `claude plugin install hugegraph-deepwiki-skill@hugegraph-deepwiki-skills` and `claude plugin install hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`.
+Install the three Claude Code plugins from the current repository by running `claude plugin marketplace add "$(pwd)"`, then `claude plugin install hugegraph-deepwiki-skill@hugegraph-deepwiki-skills`, `claude plugin install hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`, and `claude plugin install seatunnel-deepwiki-skill@hugegraph-deepwiki-skills`.
 ```
 
 ## Codex Install
@@ -100,6 +108,7 @@ cd <repo-directory>
 codex plugin marketplace add "$(pwd)"
 codex plugin add hugegraph-deepwiki-skill@hugegraph-deepwiki-skills
 codex plugin add hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills
+codex plugin add seatunnel-deepwiki-skill@hugegraph-deepwiki-skills
 ```
 
 After the repository is published, Codex can add the marketplace from the remote Git repository:
@@ -108,6 +117,7 @@ After the repository is published, Codex can add the marketplace from the remote
 codex plugin marketplace add <owner>/<repo> --ref main
 codex plugin add hugegraph-deepwiki-skill@hugegraph-deepwiki-skills
 codex plugin add hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills
+codex plugin add seatunnel-deepwiki-skill@hugegraph-deepwiki-skills
 ```
 
 This repository includes Codex plugin manifests at:
@@ -116,6 +126,7 @@ This repository includes Codex plugin manifests at:
 .agents/plugins/marketplace.json
 plugins/hugegraph-deepwiki-skill/.codex-plugin/plugin.json
 plugins/hugegraph-ai-deepwiki-skill/.codex-plugin/plugin.json
+plugins/seatunnel-deepwiki-skill/.codex-plugin/plugin.json
 ```
 
 `.agents/plugins/marketplace.json` is the repository-level Codex marketplace manifest. Each plugin also has its own `.codex-plugin/plugin.json`.
@@ -127,6 +138,7 @@ CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 mkdir -p "$CODEX_HOME/skills"
 cp -R plugins/hugegraph-deepwiki-skill/skills/hugegraph-deepwiki-skill "$CODEX_HOME/skills/"
 cp -R plugins/hugegraph-ai-deepwiki-skill/skills/hugegraph-ai-deepwiki-skill "$CODEX_HOME/skills/"
+cp -R plugins/seatunnel-deepwiki-skill/skills/seatunnel-deepwiki-skill "$CODEX_HOME/skills/"
 ```
 
 ### Ask Codex To Install It
@@ -134,13 +146,13 @@ cp -R plugins/hugegraph-ai-deepwiki-skill/skills/hugegraph-ai-deepwiki-skill "$C
 Paste this into Codex from any workspace:
 
 ```text
-Clone <repo-url>, enter the cloned repository, run `codex plugin marketplace add "$(pwd)"`, then install `hugegraph-deepwiki-skill@hugegraph-deepwiki-skills` and `hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills` with `codex plugin add`. If this Codex build has no plugin add command, copy `plugins/hugegraph-deepwiki-skill/skills/hugegraph-deepwiki-skill` and `plugins/hugegraph-ai-deepwiki-skill/skills/hugegraph-ai-deepwiki-skill` into `${CODEX_HOME:-$HOME/.codex}/skills`. Do not hardcode local absolute paths.
+Clone <repo-url>, enter the cloned repository, run `codex plugin marketplace add "$(pwd)"`, then install `hugegraph-deepwiki-skill@hugegraph-deepwiki-skills`, `hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`, and `seatunnel-deepwiki-skill@hugegraph-deepwiki-skills` with `codex plugin add`. If this Codex build has no plugin add command, copy the skill folders under `plugins/*/skills/` into `${CODEX_HOME:-$HOME/.codex}/skills`. Do not hardcode local absolute paths.
 ```
 
 If the repository is already open in Codex, use:
 
 ```text
-Install the two Codex skills from the current repository. First run `codex plugin marketplace add "$(pwd)"`, then run `codex plugin add hugegraph-deepwiki-skill@hugegraph-deepwiki-skills` and `codex plugin add hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`. If this environment has no plugin add command, copy the two skill folders under `plugins/*/skills/` into `${CODEX_HOME:-$HOME/.codex}/skills`.
+Install the three Codex skills from the current repository. First run `codex plugin marketplace add "$(pwd)"`, then run `codex plugin add hugegraph-deepwiki-skill@hugegraph-deepwiki-skills`, `codex plugin add hugegraph-ai-deepwiki-skill@hugegraph-deepwiki-skills`, and `codex plugin add seatunnel-deepwiki-skill@hugegraph-deepwiki-skills`. If this environment has no plugin add command, copy the skill folders under `plugins/*/skills/` into `${CODEX_HOME:-$HOME/.codex}/skills`.
 ```
 
 ## Manual Skill Install
@@ -151,6 +163,7 @@ Claude Code user-level skills:
 mkdir -p ~/.claude/skills
 cp -R plugins/hugegraph-deepwiki-skill/skills/hugegraph-deepwiki-skill ~/.claude/skills/
 cp -R plugins/hugegraph-ai-deepwiki-skill/skills/hugegraph-ai-deepwiki-skill ~/.claude/skills/
+cp -R plugins/seatunnel-deepwiki-skill/skills/seatunnel-deepwiki-skill ~/.claude/skills/
 ```
 
 Codex user-level skills:
@@ -160,6 +173,7 @@ CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 mkdir -p "$CODEX_HOME/skills"
 cp -R plugins/hugegraph-deepwiki-skill/skills/hugegraph-deepwiki-skill "$CODEX_HOME/skills/"
 cp -R plugins/hugegraph-ai-deepwiki-skill/skills/hugegraph-ai-deepwiki-skill "$CODEX_HOME/skills/"
+cp -R plugins/seatunnel-deepwiki-skill/skills/seatunnel-deepwiki-skill "$CODEX_HOME/skills/"
 ```
 
 ## Usage
@@ -174,4 +188,8 @@ Use $hugegraph-deepwiki-skill to explain HugeGraph schema and traversal behavior
 Use $hugegraph-ai-deepwiki-skill to explain the HugeGraph AI RAG workflow.
 ```
 
-Use the HugeGraph assistant for the graph database repository and the HugeGraph AI assistant for the AI/RAG repository. Keep the two separate so answers stay grounded in the intended source repository.
+```text
+Use $seatunnel-deepwiki-skill to explain how SeaTunnel loads connectors.
+```
+
+Use the HugeGraph assistant for the graph database repository, the HugeGraph AI assistant for the AI/RAG repository, and the SeaTunnel assistant for the data integration repository. Keep them separate so answers stay grounded in the intended source repository.

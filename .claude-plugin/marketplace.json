@@ -1,6 +1,6 @@
 {
   "name": "hugegraph-deepwiki-skills",
-  "description": "Repository knowledge assistants for Apache HugeGraph and HugeGraph AI.",
+  "description": "Repository knowledge assistants for Apache HugeGraph, HugeGraph AI, and SeaTunnel.",
   "owner": {
     "name": "HugeGraph Community"
   },
@@ -14,6 +14,11 @@
       "name": "hugegraph-ai-deepwiki-skill",
       "source": "./plugins/hugegraph-ai-deepwiki-skill",
       "description": "Ask repository-grounded questions about Apache HugeGraph AI."
+    },
+    {
+      "name": "seatunnel-deepwiki-skill",
+      "source": "./plugins/seatunnel-deepwiki-skill",
+      "description": "Ask repository-grounded questions about Apache SeaTunnel."
     }
   ]
 }

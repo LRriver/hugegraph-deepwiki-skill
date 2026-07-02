@@ -1,0 +1,9 @@
+{
+  "seatunnel": {
+    "repoName": "apache/seatunnel",
+    "deepwiki": "https://deepwiki.com/apache/seatunnel",
+    "github": "https://github.com/apache/seatunnel",
+    "enabled": true,
+    "description": "Apache SeaTunnel data integration repository"
+  }
+}

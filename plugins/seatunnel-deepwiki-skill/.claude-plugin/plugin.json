@@ -1,0 +1,13 @@
+{
+  "name": "seatunnel-deepwiki-skill",
+  "description": "Repository knowledge assistant for Apache SeaTunnel.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Apache SeaTunnel Community"
+  },
+  "homepage": "https://github.com/apache/seatunnel",
+  "repository": "https://github.com/apache/seatunnel",
+  "license": "Apache-2.0",
+  "keywords": ["seatunnel", "deepwiki", "apache", "data-integration", "knowledge-assistant"],
+  "skills": "./skills/"
+}
