@@ -1,6 +1,6 @@
 ---
 name: hugegraph-ai-deepwiki-skill
-description: Use this skill as a repository knowledge assistant for Apache HugeGraph AI, apache/hugegraph-ai source code, architecture, modules, examples, agents, RAG workflows, graph-enhanced AI features, model integration, configuration, installation, demos, or implementation details. It answers questions grounded in apache/hugegraph-ai and uses the official DeepWiki MCP wiki as the underlying retrieval channel.
+description: "Use when users ask about Apache HugeGraph AI or apache/hugegraph-ai source code, architecture, modules, examples, agents, RAG workflows, graph-enhanced AI features, model integration, configuration, installation, demos, or implementation details."
 metadata:
   short-description: Apache HugeGraph AI repository assistant
 ---
@@ -13,6 +13,37 @@ Answer questions about the Apache HugeGraph AI source repository. Use the offici
 - DeepWiki page: `https://deepwiki.com/apache/hugegraph-ai`
 - MCP endpoint: `https://mcp.deepwiki.com/mcp`
 - Default repository: `apache/hugegraph-ai`
+
+## 触发条件
+
+| 场景 | 典型输入 | 处理方式 |
+| --- | --- | --- |
+| MUST 触发 | 询问 HugeGraph AI 源码、架构、模块、Agent、RAG、图增强 AI、模型集成、配置或示例 | 先运行 `context` 检索 DeepWiki 缓存；不足时运行 `ask` |
+| SHOULD 触发 | 询问 HugeGraph AI demo、安装步骤、provider 配置、文本转 Gremlin 或 graph RAG 实现位置 | 可先运行 `structure` 定位，再用 `context` 或 `ask` |
+| MUST NOT 触发 | 询问 HugeGraph Core、非 HugeGraph AI 项目、纯通用 LLM/RAG 概念且无需仓库事实 | 使用更匹配的 skill 或普通回答 |
+
+## 工作流程
+
+```text
+┌──────────────┐
+│ User question│
+└──────┬───────┘
+       │
+       v
+┌──────────────────────┐
+│ context: local cache  │
+└──────┬───────────────┘
+       │ direct answer?
+   yes │ no
+       v
+┌──────────────┐    ┌──────────────────────┐
+│ answer user  │    │ ask: online DeepWiki  │
+└──────────────┘    └──────────┬───────────┘
+                               v
+                        ┌──────────────┐
+                        │ answer user  │
+                        └──────────────┘
+```
 
 ## Default Workflow
 
@@ -49,6 +80,21 @@ python3 scripts/deepwiki_mcp.py ask --repo hugegraph-ai --question "<user questi
 - If both an online answer and source references are needed, run `ask` for the answer and use `context` to collect source references.
 - Do not clone the repository for ordinary Q&A or verification. If current source verification is truly required, prefer online source links or raw GitHub files and clearly distinguish that from DeepWiki-grounded content.
 
+## 使用方法
+
+- 在 skill 根目录运行命令；所有脚本和引用文件均使用相对路径。
+- 普通问答优先运行 `python3 scripts/deepwiki_mcp.py context --repo hugegraph-ai --query "<question>"`。
+- 缓存片段不能直接回答时，再运行 `python3 scripts/deepwiki_mcp.py ask --repo hugegraph-ai --question "<question>"`。
+- 如需刷新 DeepWiki 预处理内容，仅在用户明确要求时给 `contents` 或 `context` 加 `--refresh`。
+
+## 使用示例
+
+```bash
+python3 scripts/deepwiki_mcp.py context --repo hugegraph-ai --query "How does HugeGraph AI implement graph RAG?"
+python3 scripts/deepwiki_mcp.py ask --repo hugegraph-ai --question "Where are LLM providers configured in HugeGraph AI?"
+python3 scripts/deepwiki_mcp.py structure --repo hugegraph-ai
+```
+
 ## When to Read Structure or Contents
 
 For broad orientation questions, onboarding questions, or "where should I start?" prompts, inspect the wiki structure:
@@ -84,3 +130,10 @@ The repository alias lives in `references/repos.json`.
 - If the user asks for code changes in a local HugeGraph AI checkout, use DeepWiki for orientation, then inspect and edit the local repository directly.
 - Do not invent details that DeepWiki does not provide. Clearly distinguish DeepWiki-grounded facts from your own inference.
 - For version-sensitive release, dependency, provider, or API-compatibility questions, verify with the live repository or official docs when the user needs current facts beyond the DeepWiki answer.
+
+## 错误处理
+
+- If `context` returns no precise snippet, run `ask` before answering.
+- If `ask` times out, retry once with the shortest faithful form of the original question.
+- If DeepWiki or the network is unavailable, say that retrieval failed and answer only when cached snippets are sufficient.
+- If Python is missing, install Python 3.9+ or run on an environment that provides it.

@@ -1,6 +1,6 @@
 ---
 name: hugegraph-deepwiki-skill
-description: Use this skill as a repository knowledge assistant for Apache HugeGraph, apache/hugegraph source code, architecture, modules, APIs, configuration, storage backends, Gremlin/traversal behavior, schema/modeling, server/client tooling, build/test workflows, or implementation details. It answers questions grounded in apache/hugegraph and uses the official DeepWiki MCP wiki as the underlying retrieval channel.
+description: "Use when users ask about Apache HugeGraph or apache/hugegraph source code, architecture, modules, APIs, configuration, storage backends, Gremlin traversal behavior, schema/modeling, server/client tooling, build/test workflows, or implementation details."
 metadata:
   short-description: Apache HugeGraph repository assistant
 ---
@@ -13,6 +13,37 @@ Answer questions about the Apache HugeGraph source repository. Use the official 
 - DeepWiki page: `https://deepwiki.com/apache/hugegraph`
 - MCP endpoint: `https://mcp.deepwiki.com/mcp`
 - Default repository: `apache/hugegraph`
+
+## 触发条件
+
+| 场景 | 典型输入 | 处理方式 |
+| --- | --- | --- |
+| MUST 触发 | 询问 HugeGraph 源码、架构、模块、API、配置、存储后端、Gremlin、schema、构建或测试 | 先运行 `context` 检索 DeepWiki 缓存；不足时运行 `ask` |
+| SHOULD 触发 | 询问某个 HugeGraph 类、配置项、命令、目录或实现位置 | 可先运行 `structure` 定位，再用 `context` 或 `ask` |
+| MUST NOT 触发 | 询问 HugeGraph AI、非 HugeGraph 项目、纯通用图数据库概念且无需仓库事实 | 使用更匹配的 skill 或普通回答 |
+
+## 工作流程
+
+```text
+┌──────────────┐
+│ User question│
+└──────┬───────┘
+       │
+       v
+┌──────────────────────┐
+│ context: local cache  │
+└──────┬───────────────┘
+       │ direct answer?
+   yes │ no
+       v
+┌──────────────┐    ┌──────────────────────┐
+│ answer user  │    │ ask: online DeepWiki  │
+└──────────────┘    └──────────┬───────────┘
+                               v
+                        ┌──────────────┐
+                        │ answer user  │
+                        └──────────────┘
+```
 
 ## Default Workflow
 
@@ -49,6 +80,21 @@ python3 scripts/deepwiki_mcp.py ask --repo hugegraph --question "<user question>
 - If both an online answer and source references are needed, run `ask` for the answer and use `context` to collect source references.
 - Do not clone the repository for ordinary Q&A or verification. If current source verification is truly required, prefer online source links or raw GitHub files and clearly distinguish that from DeepWiki-grounded content.
 
+## 使用方法
+
+- 在 skill 根目录运行命令；所有脚本和引用文件均使用相对路径。
+- 普通问答优先运行 `python3 scripts/deepwiki_mcp.py context --repo hugegraph --query "<question>"`。
+- 缓存片段不能直接回答时，再运行 `python3 scripts/deepwiki_mcp.py ask --repo hugegraph --question "<question>"`。
+- 如需刷新 DeepWiki 预处理内容，仅在用户明确要求时给 `contents` 或 `context` 加 `--refresh`。
+
+## 使用示例
+
+```bash
+python3 scripts/deepwiki_mcp.py context --repo hugegraph --query "How does HugeGraph configure RocksDB backend?"
+python3 scripts/deepwiki_mcp.py ask --repo hugegraph --question "Where is schema validation implemented in HugeGraph?"
+python3 scripts/deepwiki_mcp.py structure --repo hugegraph
+```
+
 ## When to Read Structure or Pages
 
 For broad navigation questions, or when the user asks where something lives, inspect the wiki structure:
@@ -83,3 +129,10 @@ The repository alias lives in `references/repos.json`.
 - If the user asks for code changes in a local HugeGraph checkout, use DeepWiki for orientation, then inspect and edit the local repository directly.
 - Do not invent details that DeepWiki does not provide. Clearly distinguish DeepWiki-grounded facts from your own inference.
 - For version-sensitive release, dependency, or API-compatibility questions, verify with the live repository or official docs when the user needs current facts beyond the DeepWiki answer.
+
+## 错误处理
+
+- If `context` returns no precise snippet, run `ask` before answering.
+- If `ask` times out, retry once with the shortest faithful form of the original question.
+- If DeepWiki or the network is unavailable, say that retrieval failed and answer only when cached snippets are sufficient.
+- If Python is missing, install Python 3.9+ or run on an environment that provides it.
